@@ -213,7 +213,7 @@ module Omnibus
     #
     def dependency(val)
       dependencies << val
-      dependencies.dup
+      dependencies.dup.sort!
     end
     expose :dependency
 
