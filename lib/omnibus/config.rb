@@ -294,7 +294,8 @@ module Omnibus
     #
     # @return [String]
     default(:s3_region) do
-      'us-east-1'
+      #'us-east-1'
+      raise MissingRequiredAttribute.new(self, :s3_region, "'us-east-1'")
     end
 
     # --------------------------------------------------
@@ -470,6 +471,17 @@ module Omnibus
       end
       :x86
     end
+
+    # Additional CFLAGS to inject into the environment. Note that
+    # e.g. CXXFLAGS inherits this, too.
+    #
+    # @return [String]
+    default(:inject_cflags, '')
+
+    # Additional LDFLAGS to inject into the environment.
+    #
+    # @return [String]
+    default(:inject_ldflags, '')
 
     # --------------------------------------------------
     # @!endgroup
