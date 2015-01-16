@@ -443,6 +443,17 @@ module Omnibus
     # @return [String, nil]
     default(:solaris_linker_mapfile, "files/mapfiles/solaris")
 
+    # Additional CFLAGS to inject into the environment. Note that
+    # e.g. CXXFLAGS inherits this, too.
+    #
+    # @return [String]
+    default(:inject_cflags, '')
+
+    # Additional LDFLAGS to inject into the environment.
+    #
+    # @return [String]
+    default(:inject_ldflags, '')
+
     # --------------------------------------------------
     # @!endgroup
     #
