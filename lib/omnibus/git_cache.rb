@@ -122,6 +122,7 @@ module Omnibus
       end
 
       shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} tag -f "#{tag}"))
+      log.info(log_key) { "Tagged as: `#{tag}'" }
     end
 
     def restore
@@ -137,11 +138,11 @@ module Omnibus
       end
 
       if restore_me
-        log.internal(log_key) { "Detected tag `#{tag}' can be restored, restoring" }
+        log.info(log_key) { "Detected tag `#{tag}' can be restored, restoring" }
         shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} checkout -f "#{tag}"))
         true
       else
-        log.internal(log_key) { "Could not find tag `#{tag}', skipping restore" }
+        log.info(log_key) { "Could not find tag `#{tag}', skipping restore" }
         false
       end
     end
