@@ -98,6 +98,7 @@ module Omnibus
       # This is the list of all the unqiue shasums of all the software build
       # dependencies, including the on currently being acted upon.
       shasums = [dep_list.map(&:shasum), software.shasum].flatten
+      log.internal(log_key) { "shasums: #{shasums.inspect}" }
       suffix  = Digest::SHA256.hexdigest(shasums.join('|'))
       @tag    = "#{software.name}-#{suffix}"
 
