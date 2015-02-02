@@ -263,7 +263,7 @@ module Omnibus
 
     # Indicate if you wish to cache software artifacts in S3 for
     # quicker build times.  Requires {#s3_bucket}, {#s3_access_key},
-    # and {#s3_secret_key} to be set if this is set to +true+.
+    # {#s3_secret_key} and {#s3_region} to be set if this is set to +true+.
     #
     # @return [true, false]
     default(:use_s3_caching, false)
@@ -287,6 +287,13 @@ module Omnibus
     # @return [String]
     default(:s3_secret_key) do
       raise MissingRequiredAttribute.new(self, :s3_secret_key, "'EFGH5678'")
+    end
+    #
+    # The S3 region to use with S3 caching.
+    #
+    # @return [String]
+    default(:s3_region) do
+      raise MissingRequiredAttribute.new(self, :s3_region, "'us-east-1'")
     end
 
     # The region of the S3 bucket you want to cache software artifacts in.

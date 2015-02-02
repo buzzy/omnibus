@@ -15,7 +15,8 @@
 #
 
 require 'fileutils'
-require 'omnibus/s3_helpers'
+require 'aws-sdk'
+require 'aws-sdk-resources'
 
 module Omnibus
   class S3Cache
@@ -76,15 +77,15 @@ module Omnibus
           log.info(log_key) do
             "Caching '#{fetcher.downloaded_file}' to '#{Config.s3_bucket}/#{key}'"
           end
-          
-          # Fetcher has already verified the downloaded file in software.fetch.
-          # Compute the md5 from scratch because the fetcher may have been
-          # specified with a different hashing algorithm.
-          md5 = digest(fetcher.downloaded_file, :md5)
 
-          File.open(fetcher.downloaded_file, 'rb') do |file|
-            store_object(key, file, md5, 'public-read')
-          end
+          File.open(fetcher.downloaded_file) { |content|
+            bucket.put_object(
+              key: key,
+              body: content,
+              acl: 'public-read',
+              content_md5: [[software.fetcher.checksum].pack("H*")].pack("m0"),  # (base64, not hex)
+            )
+          }
         end
 
         true
@@ -134,13 +135,37 @@ module Omnibus
 
       private
 
-      def s3_configuration
-        {
-          region:               Config.s3_region,
-          access_key_id:        Config.s3_access_key,
-          secret_access_key:    Config.s3_secret_key,
-          bucket_name:          Config.s3_bucket
-        }
+      #
+      # The client to connect to S3 with.
+      #
+      # @return [Aws::S3::Client]
+      #
+      def client
+        @client ||= Aws::S3::Client.new(
+          region: Config.s3_region,
+          credentials: Aws::Credentials.new(
+            Config.s3_access_key,
+            Config.s3_secret_key
+          )
+        )
+      end
+
+      #
+      # The bucket where the objects live.
+      #
+      # @return [Aws::S3::Bucket]
+      #
+      def bucket
+        @bucket ||= begin
+          b = Aws::S3::Bucket.new(Config.s3_bucket, client: client)
+          begin
+            client.head_bucket(bucket: b.name)
+          rescue Aws::S3::Errors::NoSuchBucket
+            b.create
+          end
+          b
+        end
+
       end
 
       #
