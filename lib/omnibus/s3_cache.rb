@@ -15,7 +15,8 @@
 #
 
 require 'fileutils'
-require 'uber-s3'
+require 'aws-sdk'
+require 'aws-sdk-resources'
 
 module Omnibus
   class S3Cache
@@ -41,7 +42,7 @@ module Omnibus
       # @return [Array<String>]
       #
       def keys
-        bucket.objects('/').map(&:key)
+        bucket.objects.map(&:key)
       end
 
       #
@@ -70,16 +71,19 @@ module Omnibus
 
           key     = key_for(software)
           fetcher = software.fetcher
-          content = IO.read(fetcher.downloaded_file)
 
           log.info(log_key) do
             "Caching '#{fetcher.downloaded_file}' to '#{Config.s3_bucket}/#{key}'"
           end
 
-          client.store(key, content,
-            access: :public_read,
-            content_md5: software.fetcher.checksum
-          )
+          File.open(fetcher.downloaded_file) { |content|
+            bucket.put_object(
+              key: key,
+              body: content,
+              acl: 'public-read',
+              content_md5: [[software.fetcher.checksum].pack("H*")].pack("m0"),  # (base64, not hex)
+            )
+          }
         end
 
         true
@@ -132,29 +136,32 @@ module Omnibus
       #
       # The client to connect to S3 with.
       #
-      # @return [UberS3::Client]
+      # @return [Aws::S3::Client]
       #
       def client
-        @client ||= UberS3.new(
-          access_key:        Config.s3_access_key,
-          secret_access_key: Config.s3_secret_key,
-          bucket:            Config.s3_bucket,
-          adapter:           :net_http,
+        @client ||= Aws::S3::Client.new(
+          region: Config.s3_region,
+          credentials: Aws::Credentials.new(
+            Config.s3_access_key,
+            Config.s3_secret_key
+          )
         )
       end
 
       #
       # The bucket where the objects live.
       #
-      # @return [UberS3::Bucket]
+      # @return [Aws::S3::Bucket]
       #
       def bucket
         @bucket ||= begin
-          if client.exists?('/')
-            client.bucket
-          else
-            client.connection.put('/')
+          b = Aws::S3::Bucket.new(Config.s3_bucket, client: client)
+          begin
+            client.head_bucket(bucket: b.name)
+          rescue Aws::S3::Errors::NoSuchBucket
+            b.create
           end
+          b
         end
       end
 
