@@ -832,10 +832,18 @@ module Omnibus
         update_with_string(digest, version_for_cache)
         update_with_string(digest, JSON.fast_generate(overrides))
 
+        log.internal(log_key) { "project.shasum: #{project.shasum}" }
+        log.internal(log_key) { "builder.shasum: #{builder.shasum}" }
+        log.internal(log_key) { "name: #{name}" }
+        log.internal(log_key) { "version_for_cache: #{version_for_cache}" }
+        log.internal(log_key) { "overrides: #{JSON.fast_generate(overrides)}" }
+
         if filepath && File.exist?(filepath)
           update_with_file_contents(digest, filepath)
+          log.internal(log_key) { "filepath: #{filepath}" }
         else
           update_with_string(digest, '<DYNAMIC>')
+          log.internal(log_key) { "filepath: <DYNAMIC>" }
         end
 
         digest.hexdigest
