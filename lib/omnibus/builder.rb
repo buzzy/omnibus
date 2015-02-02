@@ -613,14 +613,17 @@ module Omnibus
         digest = Digest::SHA256.new
 
         build_commands.each do |build_command|
+          log.internal(log_key) { "build_command: #{build_command.description}" }
           update_with_string(digest, build_command.description)
         end
 
         patches.each do |patch_path|
+          log.internal(log_key) { "patch: #{patch_path}" }
           update_with_file_contents(digest, patch_path)
         end
 
         erbs.each do |erb_path|
+          log.internal(log_key) { "erb: #{erb_path}" }
           update_with_file_contents(digest, erb_path)
         end
 
