@@ -352,13 +352,11 @@ module Omnibus
       if null?(val)
         unless @license.nil?
           # TODO - better error reporting
-          Dir.chdir(project_dir) do
-            contents = File.open(@license[:path]).read()
-            if @license[:cue]
-              return contents[contents.index(@license[:cue])..-1]
-            end
-            contents
+          contents = File.open(File.join(project_dir, @license[:path])).read()
+          if @license[:cue]
+            return contents[contents.index(@license[:cue])..-1]
           end
+          contents
         end
       else
         unless val.is_a?(Hash)
