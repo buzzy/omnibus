@@ -148,7 +148,7 @@ EOH
 
     def to_s
       <<-EOH
-Software must specify a `#{@key}; to cache it in S3 (#{@package})!
+Software must specify a `#{@key}; to cache it in S3 (#{@package.name})!
 EOH
     end
   end
