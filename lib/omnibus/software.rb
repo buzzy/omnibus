@@ -432,6 +432,48 @@ module Omnibus
     # These are not the only files your project fetches. They are merely the
     # files that your project cares about. A source tarball may contain more
     # directories that are not under your project_dir.
+
+    # The file (if any) containing the license
+    # TODO - Should accept a block
+    def license(val = NULL)
+      if null?(val)
+        unless @license.nil?
+          # TODO - better error reporting
+          Dir.chdir(project_dir) do
+            contents = File.open(@license[:path]).read()
+            if @license[:cue]
+              return contents[contents.index(@license[:cue])..-1]
+            end
+            contents
+          end
+        end
+      else
+        unless val.is_a?(Hash)
+          raise InvalidValue.new(:license,
+            "be a kind of `Hash', but was `#{val.class.inspect}'")
+        end
+
+        extra_keys = val.keys - [:path, :cue]
+        unless extra_keys.empty?
+          raise InvalidValue.new(:license,
+            "only include valid keys. Invalid keys: #{extra_keys.inspect}")
+        end
+
+        duplicate_keys = val.keys & [:path]
+        unless duplicate_keys.size < 2
+          raise InvalidValue.new(:license,
+            "not include duplicate keys. Duplicate keys: #{duplicate_keys.inspect}")
+        end
+
+        @license ||= {}
+        @license.merge!(val)
+      end
+    end
+    expose :license
+
+    #
+    # The path where the extracted software lives.
+
     #
     # @return [String]
     #

@@ -86,5 +86,20 @@ module Omnibus
       end
       out
     end
+
+    def pretty_license_file(project)
+      out = ''
+      project.library.each do |software|
+        unless software.license.nil?
+          out << "#{software.name} #{software.version}"
+          out << "\n\n"
+          out << software.license
+          out << "\n" * 2
+          out << '-' * 80
+          out << "\n" * 2
+        end
+      end
+      out
+    end
   end
 end
