@@ -460,7 +460,21 @@ module Omnibus
                   else
                     0
                   end
-            licenses.push(contents[pos..-1])
+
+            one_name = unless one_license[:name].nil?
+                     one_license[:name]
+                   else
+                     name
+                   end
+
+            one_version = unless one_license[:version].nil?
+                     one_license[:version]
+                   else
+                     version
+                   end
+
+
+            licenses.push([one_name, one_version, contents[pos..-1]])
           end
           licenses
         end
@@ -470,7 +484,7 @@ module Omnibus
             "be a kind of `Hash', but was `#{val.class.inspect}'")
         end
 
-        extra_keys = val.keys - [:path, :cue, :encoding, :url]
+        extra_keys = val.keys - [:path, :cue, :encoding, :url, :name, :version]
         unless extra_keys.empty?
           raise InvalidValue.new(:license,
             "only include valid keys. Invalid keys: #{extra_keys.inspect}")

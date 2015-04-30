@@ -97,8 +97,8 @@ module Omnibus
 
       project.library.each do |software|
         unless software.license.nil?
-          software.license.each do |license|
-            out << "License for: #{software.name} #{software.version}"
+          software.license.each do |name, version, license|
+            out << "License for: #{name} #{version}"
             out << "\n\n"
 
             out << wrap(license, WRAPPING)
