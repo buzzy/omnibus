@@ -350,13 +350,32 @@ module Omnibus
     # TODO - Should accept a block
     def license(val = NULL)
       if null?(val)
-        unless @license.nil?
-          # TODO - better error reporting
-          contents = File.open(File.join(project_dir, @license[:path])).read()
-          if @license[:cue]
-            return contents[contents.index(@license[:cue])..-1]
+        licenses = []
+        unless @licenses.nil?
+          @licenses.each do |one_license|
+            unless one_license[:path].nil?
+              contents = File.open(
+                File.join(project_dir, one_license[:path]),
+                external_encoding: one_license[:encoding]
+              ).read()
+            end
+
+            unless one_license[:url].nil?
+              contents = one_license[:url]
+            end
+
+            if one_license[:encoding]
+              contents.encode!(Encoding::UTF_8)
+            end
+
+            pos = unless one_license[:cue].nil?
+                    contents.index(one_license[:cue])
+                  else
+                    0
+                  end
+            licenses.push(contents[pos..-1])
           end
-          contents
+          licenses
         end
       else
         unless val.is_a?(Hash)
@@ -364,20 +383,20 @@ module Omnibus
             "be a kind of `Hash', but was `#{val.class.inspect}'")
         end
 
-        extra_keys = val.keys - [:path, :cue]
+        extra_keys = val.keys - [:path, :cue, :encoding, :url]
         unless extra_keys.empty?
           raise InvalidValue.new(:license,
             "only include valid keys. Invalid keys: #{extra_keys.inspect}")
         end
 
-        duplicate_keys = val.keys & [:path]
+        duplicate_keys = val.keys & [:path, :url]
         unless duplicate_keys.size < 2
           raise InvalidValue.new(:license,
             "not include duplicate keys. Duplicate keys: #{duplicate_keys.inspect}")
         end
 
-        @license ||= {}
-        @license.merge!(val)
+        @licenses ||= []
+        @licenses.push(val)
       end
     end
     expose :license

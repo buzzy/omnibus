@@ -19,6 +19,7 @@ module Omnibus
     extend self
 
     PADDING = 3
+    WRAPPING = 80
 
     # Determine how wide a column should be, taking into account both
     # the column name as well as all data in that column.  If no data
@@ -32,6 +33,10 @@ module Omnibus
       else
         0
       end
+    end
+
+    def wrap(s, width)
+      s.split("\n").collect { |part| part.gsub(/(.{1,#{width}})(\s+|\Z)/, "\\1\n").rstrip }.join("\n")
     end
 
     def non_nil_values(hashes, selector_key)
@@ -89,16 +94,24 @@ module Omnibus
 
     def pretty_license_file(project)
       out = ''
+
       project.library.each do |software|
         unless software.license.nil?
-          out << "#{software.name} #{software.version}"
-          out << "\n\n"
-          out << software.license
-          out << "\n" * 2
-          out << '-' * 80
-          out << "\n" * 2
+          software.license.each do |license|
+            out << "License for: #{software.name} #{software.version}"
+            out << "\n\n"
+
+            out << wrap(license, WRAPPING)
+            out << "\n\n"
+
+            out << '=' * WRAPPING
+            out << "\n"
+            out << '=' * WRAPPING
+            out << "\n\n"
+          end
         end
       end
+
       out
     end
   end
