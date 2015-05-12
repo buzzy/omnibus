@@ -40,7 +40,22 @@ module Omnibus
     # @return [true, false]
     #
     def fetch_required?
-      !(File.exist?(downloaded_file) && digest(downloaded_file, digest_type) == checksum)
+      unless File.exist?(downloaded_file)
+        return true
+      end
+
+      unless digest(downloaded_file, :md5) == checksum
+        return true
+      end
+
+      if command = verify_command
+        log.info(log_key) { "Verifying `#{downloaded_file}' vs `#{Config.source_dir}'" }
+        if shellout(command).error?
+          return true
+        end
+      end
+
+      return false
     end
 
     #
@@ -217,6 +232,11 @@ module Omnibus
       if downloaded_file.end_with?(*ALL_EXTENSIONS)
         log.info(log_key) { "Extracting `#{safe_downloaded_file}' to `#{safe_project_dir}'" }
         extract
+
+    def extract
+      if command = extract_command
+        log.info(log_key) { "Extracting `#{downloaded_file}' to `#{Config.source_dir}'" }
+        shellout!(command)
       else
         log.info(log_key) { "`#{safe_downloaded_file}' is not an archive - copying to `#{safe_project_dir}'" }
 
@@ -347,6 +367,31 @@ module Omnibus
     # @return [[String]]
     #
     def extract_command
+      if Ohai['platform'] == 'windows' && downloaded_file.end_with?(*WIN_7Z_EXTENSIONS)
+        "7z.exe x #{windows_safe_path(downloaded_file)} -o#{Config.source_dir} -r -y"
+      elsif Ohai['platform'] != 'windows' && downloaded_file.end_with?('.7z')
+        "7z x #{windows_safe_path(downloaded_file)} -o#{Config.source_dir} -r -y"
+      elsif Ohai['platform'] != 'windows' && downloaded_file.end_with?('.zip')
+        "unzip #{windows_safe_path(downloaded_file)} -d #{Config.source_dir}"
+      elsif downloaded_file.end_with?(*TAR_EXTENSIONS)
+        tar_command("x")
+      end
+    end
+
+    def verify_command
+      # Tar is the only one we know to verify right now
+      if downloaded_file.end_with?(*TAR_EXTENSIONS)
+        tar_command("d")
+      end
+    end
+
+    def tar_command(action_switch)
+        compression_switch = 'z' if downloaded_file.end_with?('gz')
+        compression_switch = 'j' if downloaded_file.end_with?('bz2')
+        compression_switch = 'J' if downloaded_file.end_with?('xz')
+        compression_switch = ''  if downloaded_file.end_with?('tar')
+
+        "#{tar} #{compression_switch}#{action_switch}f #{windows_safe_path(downloaded_file)} -C#{Config.source_dir}"
     end
 
     #
