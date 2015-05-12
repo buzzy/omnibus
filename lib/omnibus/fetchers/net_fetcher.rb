@@ -34,7 +34,22 @@ module Omnibus
     # @return [true, false]
     #
     def fetch_required?
-      !(File.exist?(downloaded_file) && digest(downloaded_file, :md5) == checksum)
+      unless File.exist?(downloaded_file)
+        return true
+      end
+
+      unless digest(downloaded_file, :md5) == checksum
+        return true
+      end
+
+      if command = verify_command
+        log.info(log_key) { "Verifying `#{downloaded_file}' vs `#{Config.source_dir}'" }
+        if shellout(command).error?
+          return true
+        end
+      end
+
+      return false
     end
 
     #
@@ -196,7 +211,7 @@ module Omnibus
     def extract
       if command = extract_command
         log.info(log_key) { "Extracting `#{downloaded_file}' to `#{Config.source_dir}'" }
-        shellout!(extract_command)
+        shellout!(command)
       else
         log.info(log_key) { "`#{downloaded_file}' is not an archive - copying to `#{project_dir}'" }
 
@@ -244,13 +259,24 @@ module Omnibus
       elsif Ohai['platform'] != 'windows' && downloaded_file.end_with?('.zip')
         "unzip #{windows_safe_path(downloaded_file)} -d #{Config.source_dir}"
       elsif downloaded_file.end_with?(*TAR_EXTENSIONS)
+        tar_command("x")
+      end
+    end
+
+    def verify_command
+      # Tar is the only one we know to verify right now
+      if downloaded_file.end_with?(*TAR_EXTENSIONS)
+        tar_command("d")
+      end
+    end
+
+    def tar_command(action_switch)
         compression_switch = 'z' if downloaded_file.end_with?('gz')
         compression_switch = 'j' if downloaded_file.end_with?('bz2')
         compression_switch = 'J' if downloaded_file.end_with?('xz')
         compression_switch = ''  if downloaded_file.end_with?('tar')
 
-        "#{tar} #{compression_switch}xf #{windows_safe_path(downloaded_file)} -C#{Config.source_dir}"
-      end
+        "#{tar} #{compression_switch}#{action_switch}f #{windows_safe_path(downloaded_file)} -C#{Config.source_dir}"
     end
 
     #
